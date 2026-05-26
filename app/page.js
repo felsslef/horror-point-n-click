@@ -18,7 +18,6 @@ const ITEM_DB = {
           state.consumeItem('envelope'); 
           state.getItem('chave do portão'); 
           state.getDocument('carta do envelope');
-          state.setObjective('Use a chave encontrada para abrir o portão.'); // Exemplo mudando objetivo por botão
           state.closeInspect(); 
         }
       }
@@ -33,10 +32,7 @@ const DOCUMENT_DB = {
   },
   'carta do envelope': {
     title: 'Carta do Envelope',
-    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembrá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.
-
-Agradecemos desde já.
-Defesa e Monitoramento Especializado Ltda.`
+    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembrá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.\n\nAgradecemos desde já.\nDefesa e Monitoramento Especializado Ltda.`
   }
 };
 
@@ -55,17 +51,18 @@ export default function Home() {
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [readingDocument, setReadingDocument] = useState(null);
 
-  // --- SISTEMA DE LEGENDA ---
+  // --- SISTEMA DE LEGENDA (ORIGINAL) ---
   const [currentSubtitle, setCurrentSubtitle] = useState(''); 
   const [subtitleQueue, setSubtitleQueue] = useState([]);     
   const [playedDialogues, setPlayedDialogues] = useState([]); 
 
-  // --- 🎯 SISTEMA DE OBJETIVOS ---
-  const [objective, setObjective] = useState('Explore a propriedade abandonada e procure uma entrada.');
-  const [isObjectiveVisible, setIsObjectiveVisible] = useState(true); // Começa visível ao carregar o jogo
-  const [objectiveTrigger, setObjectiveTrigger] = useState(0); // Controla o reset do timer no TAB
+  // --- SISTEMA DE OBJETIVOS ---
+  const [objective, setObjective] = useState();
+  const [isObjectiveVisible, setIsObjectiveVisible] = useState(true); 
+  const [objectiveTrigger, setObjectiveTrigger] = useState(0); 
+  const [pendingObjective, setPendingObjective] = useState(null);
 
-  // --- 🛠️ SISTEMA INTERNO MODO ADMIN / DEV ---
+  // --- SISTEMA INTERNO MODO ADMIN / DEV ---
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminClicks, setAdminClicks] = useState([]);
   const [generatedCodes, setGeneratedCodes] = useState([]);
@@ -85,27 +82,55 @@ export default function Home() {
   // Monitora a entrada do jogador em novos cenários
   useEffect(() => {
     const activeScene = SCENES[currentSceneId];
-    
-    // Atualiza objetivo por cenário se a cena possuir a propriedade definida
-    if (activeScene?.objective) {
-      setObjective(activeScene.objective);
+    const hasPlayed = playedDialogues.includes(currentSceneId);
+
+    if (!hasPlayed) {
+      // 1. Toca a cena pela primeira vez
+      setPlayedDialogues((prev) => [...prev, currentSceneId]);
+      
+      if (activeScene?.entryDialogues) {
+        setCurrentSubtitle('');
+        
+        if (Array.isArray(activeScene.entryDialogues)) {
+          setSubtitleQueue([...activeScene.entryDialogues]);
+        } else if (typeof activeScene.entryDialogues === 'string') {
+          setSubtitleQueue([activeScene.entryDialogues]);
+        }
+        
+        // Guarda o objetivo para exibir só no final das falas
+        if (activeScene.objective) {
+          setPendingObjective(activeScene.objective);
+        }
+      } else if (activeScene?.objective) {
+        // Se a cena não tiver falas, exibe o objetivo imediatamente
+        setObjective(activeScene.objective);
+        setIsObjectiveVisible(true);
+        setObjectiveTrigger(prev => prev + 1);
+      }
+    } else {
+      // 2. Se a cena já foi tocada antes (revisitando a sala)
+      // Só exibe se não houver um objetivo pendente na fila para não bugar
+      if (activeScene?.objective && !pendingObjective) {
+        setObjective(activeScene.objective);
+        setIsObjectiveVisible(true);
+        setObjectiveTrigger(prev => prev + 1);
+      }
+    }
+  // Removemos o 'playedDialogues' daqui para impedir que o React rode 2 vezes!
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSceneId]);
+
+  // NOVO: Mostra o objetivo assim que as falas da cena terminarem
+  useEffect(() => {
+    if (pendingObjective && subtitleQueue.length === 0 && !currentSubtitle) {
+      setObjective(pendingObjective);
       setIsObjectiveVisible(true);
       setObjectiveTrigger(prev => prev + 1);
+      setPendingObjective(null); // Limpa para não rodar de novo
     }
+  }, [subtitleQueue, currentSubtitle, pendingObjective]);
 
-    if (activeScene?.entryDialogues && !playedDialogues.includes(currentSceneId)) {
-      setCurrentSubtitle('');
-      
-      if (Array.isArray(activeScene.entryDialogues)) {
-        setSubtitleQueue([...activeScene.entryDialogues]);
-      } else if (typeof activeScene.entryDialogues === 'string') {
-        setSubtitleQueue([activeScene.entryDialogues]);
-      }
-      
-      setPlayedDialogues((prev) => [...prev, currentSceneId]);
-    }
-  }, [currentSceneId, playedDialogues]);
-
+  // Motor original da fila de legendas
   useEffect(() => {
     if (!currentSubtitle && subtitleQueue.length > 0) {
       setCurrentSubtitle(subtitleQueue[0]); 
@@ -128,9 +153,9 @@ export default function Home() {
 
       // Tecla TAB: Remostra o objetivo atual na tela
       if (key === 'tab') {
-        event.preventDefault(); // Impede o navegador de selecionar elementos da página
+        event.preventDefault(); 
         setIsObjectiveVisible(true);
-        setObjectiveTrigger(prev => prev + 1); // Força o reset do timer de 5s
+        setObjectiveTrigger(prev => prev + 1); 
       }
 
       // Checagem do Konami Code para Modo Admin
@@ -161,6 +186,7 @@ export default function Home() {
 
   const scene = SCENES[currentSceneId];
 
+  // Interação original baseada em Array (localQueue)
   const handleInteraction = (hotspot) => {
     setCurrentSubtitle('');
     let localQueue = [];
@@ -201,7 +227,6 @@ export default function Home() {
         localQueue.push(text);
       },
       
-      // Permite alterar o objetivo dinamicamente via código de qualquer botão
       setObjective: (text) => {
         setObjective(text);
         setIsObjectiveVisible(true);
