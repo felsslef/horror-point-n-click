@@ -26,13 +26,16 @@ const ITEM_DB = {
 };
 
 const DOCUMENT_DB = {
-  'bilhete_antigo': {
-    title: 'Bilhete Velho',
-    content: 'Se você está lendo isso, já é tarde demais. O código do cofre é o ano em que esta casa foi abandonada: 1984. Não olhe para trás.'
-  },
   'carta do envelope': {
     title: 'Carta do Envelope',
-    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembrá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.\n\nAgradecemos desde já.\nDefesa e Monitoramento Especializado Ltda.`
+    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembrá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.
+
+É importante citar também que o pacote de seguro contratado pelo senhor não cobre manuseio e transporte de móveis e/ou itens pessoais, solicitação de vistoria e reforma, solicitação de guarda noturna ou diurna e nem a possibilidade de recorrer a vistorias obrigatórias.
+
+Nesse caso, pedimos que vá até o local e retire tudo o que pertence ao senhor e/ou a familiares e amigos. Caso contrário, será cobrada uma multa de R$150 por item, grande ou pequeno, deixado no local.
+
+Agradecemos desde já.
+Defesa e Monitoramento Especializado Ltda.`
   }
 };
 
@@ -58,6 +61,7 @@ export default function Home() {
 
   // --- SISTEMA DE OBJETIVOS ---
   const [objective, setObjective] = useState();
+  const [completedObjectives, setCompletedObjectives] = useState([]); // Histórico de objetivos concluídos
   const [isObjectiveVisible, setIsObjectiveVisible] = useState(true); 
   const [objectiveTrigger, setObjectiveTrigger] = useState(0); 
   const [pendingObjective, setPendingObjective] = useState(null);
@@ -68,6 +72,22 @@ export default function Home() {
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [konamiIndex, setKonamiIndex] = useState(0);
   const konamiCode = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+
+  // Função gerenciadora para trocar objetivos e mover o antigo para a lixeira de concluídos
+  const changeObjective = (newObjective) => {
+    if (!newObjective) return;
+    
+    setObjective(prev => {
+      // Se o objetivo antigo existia e é diferente do novo, ele foi concluído!
+      if (prev && prev !== newObjective) {
+        setCompletedObjectives(c => c.includes(prev) ? c : [...c, prev]);
+      }
+      return newObjective;
+    });
+
+    setIsObjectiveVisible(true);
+    setObjectiveTrigger(prev => prev + 1);
+  };
 
   // Timer para sumir com o objetivo após 5 segundos
   useEffect(() => {
@@ -97,35 +117,31 @@ export default function Home() {
           setSubtitleQueue([activeScene.entryDialogues]);
         }
         
-        // Guarda o objetivo para exibir só no final das falas
-        if (activeScene.objective) {
+        // Guarda o objetivo para exibir só no final das falas (se ainda não foi concluído antes)
+        if (activeScene.objective && !completedObjectives.includes(activeScene.objective)) {
           setPendingObjective(activeScene.objective);
         }
-      } else if (activeScene?.objective) {
+      } else if (activeScene?.objective && !completedObjectives.includes(activeScene.objective)) {
         // Se a cena não tiver falas, exibe o objetivo imediatamente
-        setObjective(activeScene.objective);
-        setIsObjectiveVisible(true);
-        setObjectiveTrigger(prev => prev + 1);
+        changeObjective(activeScene.objective);
       }
     } else {
       // 2. Se a cena já foi tocada antes (revisitando a sala)
-      // Só exibe se não houver um objetivo pendente na fila para não bugar
+      // Só mostra o balão de objetivo se o objetivo daquela sala AINDA for o atual do jogador
       if (activeScene?.objective && !pendingObjective) {
-        setObjective(activeScene.objective);
-        setIsObjectiveVisible(true);
-        setObjectiveTrigger(prev => prev + 1);
+        if (activeScene.objective === objective) {
+          setIsObjectiveVisible(true);
+          setObjectiveTrigger(prev => prev + 1);
+        }
       }
     }
-  // Removemos o 'playedDialogues' daqui para impedir que o React rode 2 vezes!
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSceneId]);
 
-  // NOVO: Mostra o objetivo assim que as falas da cena terminarem
+  // Mostra o objetivo assim que as falas da cena terminarem
   useEffect(() => {
     if (pendingObjective && subtitleQueue.length === 0 && !currentSubtitle) {
-      setObjective(pendingObjective);
-      setIsObjectiveVisible(true);
-      setObjectiveTrigger(prev => prev + 1);
+      changeObjective(pendingObjective);
       setPendingObjective(null); // Limpa para não rodar de novo
     }
   }, [subtitleQueue, currentSubtitle, pendingObjective]);
@@ -228,9 +244,7 @@ export default function Home() {
       },
       
       setObjective: (text) => {
-        setObjective(text);
-        setIsObjectiveVisible(true);
-        setObjectiveTrigger(prev => prev + 1);
+        changeObjective(text);
       },
       
       closeInspect: () => setInspectingItem(null) 

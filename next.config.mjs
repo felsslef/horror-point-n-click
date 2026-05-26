@@ -4,7 +4,7 @@ const nextConfig = {
   reactCompiler: true,
   // Allow this host to access Next.js dev resources (webpack HMR)
   // Add other hosts here if you develop from multiple devices
-  allowedDevOrigins: ['172.24.61.123', '192.168.1.69', '10.111.245.123'],
+  allowedDevOrigins: ['172.24.61.123', '192.168.1.69', '10.111.245.123', '26.38.138.71'],
 };
 
 export default nextConfig;
