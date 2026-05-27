@@ -61,7 +61,7 @@ export default function Home() {
 
   // --- SISTEMA DE OBJETIVOS ---
   const [objective, setObjective] = useState();
-  const [completedObjectives, setCompletedObjectives] = useState([]); // Histórico de objetivos concluídos
+  const [completedObjectives, setCompletedObjectives] = useState([]); 
   const [isObjectiveVisible, setIsObjectiveVisible] = useState(true); 
   const [objectiveTrigger, setObjectiveTrigger] = useState(0); 
   const [pendingObjective, setPendingObjective] = useState(null);
@@ -73,18 +73,16 @@ export default function Home() {
   const [konamiIndex, setKonamiIndex] = useState(0);
   const konamiCode = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
 
-  // Função gerenciadora para trocar objetivos e mover o antigo para a lixeira de concluídos
+  // Função gerenciadora para trocar objetivos
   const changeObjective = (newObjective) => {
-    if (!newObjective) return;
+    // CORREÇÃO: Se não houver novo objetivo ou se ele for idêntico ao atual, ignora completamente
+    if (!newObjective || newObjective === objective) return;
     
-    setObjective(prev => {
-      // Se o objetivo antigo existia e é diferente do novo, ele foi concluído!
-      if (prev && prev !== newObjective) {
-        setCompletedObjectives(c => c.includes(prev) ? c : [...c, prev]);
-      }
-      return newObjective;
-    });
-
+    if (objective) {
+      setCompletedObjectives(c => c.includes(objective) ? c : [...c, objective]);
+    }
+    
+    setObjective(newObjective);
     setIsObjectiveVisible(true);
     setObjectiveTrigger(prev => prev + 1);
   };
@@ -117,24 +115,14 @@ export default function Home() {
           setSubtitleQueue([activeScene.entryDialogues]);
         }
         
-        // Guarda o objetivo para exibir só no final das falas (se ainda não foi concluído antes)
         if (activeScene.objective && !completedObjectives.includes(activeScene.objective)) {
           setPendingObjective(activeScene.objective);
         }
       } else if (activeScene?.objective && !completedObjectives.includes(activeScene.objective)) {
-        // Se a cena não tiver falas, exibe o objetivo imediatamente
         changeObjective(activeScene.objective);
       }
-    } else {
-      // 2. Se a cena já foi tocada antes (revisitando a sala)
-      // Só mostra o balão de objetivo se o objetivo daquela sala AINDA for o atual do jogador
-      if (activeScene?.objective && !pendingObjective) {
-        if (activeScene.objective === objective) {
-          setIsObjectiveVisible(true);
-          setObjectiveTrigger(prev => prev + 1);
-        }
-      }
     }
+    // CORREÇÃO: O bloco "else" antigo foi removido. Voltar para salas antigas não reabre o balão.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSceneId]);
 
@@ -142,7 +130,7 @@ export default function Home() {
   useEffect(() => {
     if (pendingObjective && subtitleQueue.length === 0 && !currentSubtitle) {
       changeObjective(pendingObjective);
-      setPendingObjective(null); // Limpa para não rodar de novo
+      setPendingObjective(null); 
     }
   }, [subtitleQueue, currentSubtitle, pendingObjective]);
 
@@ -167,11 +155,16 @@ export default function Home() {
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
 
-      // Tecla TAB: Remostra o objetivo atual na tela
+      // CORREÇÃO: Tecla TAB agora alterna (Abre se fechado / Fecha na hora se aberto)
       if (key === 'tab') {
         event.preventDefault(); 
-        setIsObjectiveVisible(true);
-        setObjectiveTrigger(prev => prev + 1); 
+        setIsObjectiveVisible(prev => {
+          const nextState = !prev;
+          if (nextState) {
+            setObjectiveTrigger(t => t + 1); // Só reseta o timer se estiver abrindo
+          }
+          return nextState;
+        });
       }
 
       // Checagem do Konami Code para Modo Admin
