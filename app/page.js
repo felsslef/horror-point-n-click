@@ -199,7 +199,7 @@ export default function Home() {
 
     // 🚪 CONFIGURAÇÃO DO QUEBRA-CABEÇA DAS PORTAS
     // Mude os nomes abaixo para baterem EXATAMENTE com os IDs que você criou no seu `scenes.js`
-    const requiredEntrances = ['porta_principal', 'janela_sala', 'porta_churrasqueira'];
+    const requiredEntrances = ['portaCozinha', 'portaDupla', 'janela'];
     const allEntrancesChecked = requiredEntrances.every(id => checkedEntrances.includes(id));
 
     // Se o jogador interagir com uma das entradas trancadas obrigatórias, salva no estado

@@ -185,19 +185,12 @@ export const SCENES = {
   // 6. CENA: COZINHA INTERNA
   // ==========================================
   cozinha: {
-    image: '/cenarios/cozinhaInterna.jpeg',
+    image: '/cenarios/cozinha.jpeg',
     entryDialogues: [
       'Consegui passar pela janela...',
       'Está escuro aqui dentro e com um cheiro forte de poeira.'
     ],
     hotspots: [
-      {
-        id: 'olharRedor',
-        top: '40%', left: '40%', width: '20%', height: '20%',
-        action: (state) => {
-          state.speak('Preciso encontrar pistas ou algo de valor por este cômodo.');
-        }
-      }
     ]
   }
 };
