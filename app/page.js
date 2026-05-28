@@ -28,7 +28,7 @@ const ITEM_DB = {
 const DOCUMENT_DB = {
   'carta do envelope': {
     title: 'Carta do Envelope',
-    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembrá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.
+    content: `Querido cliente, o caso da sua casa é bastante sério. Observamos muitos erros referentes tanto à estrutura externa quanto à estrutura interna. Entendemos que é difícil para você perder um local de infância, mas gostaríamos de lembá-lo de que teria sido melhor pensar nisso antes de abandonar a casa.
 
 É importante citar também que o pacote de seguro contratado pelo senhor não cobre manuseio e transporte de móveis e/ou itens pessoais, solicitação de vistoria e reforma, solicitação de guarda noturna ou diurna e nem a possibilidade de recorrer a vistorias obrigatórias.
 
@@ -66,6 +66,9 @@ export default function Home() {
   const [objectiveTrigger, setObjectiveTrigger] = useState(0); 
   const [pendingObjective, setPendingObjective] = useState(null);
 
+  // --- NOVO: RASTREIO DE PORTAS E JANELAS VISITADAS ---
+  const [checkedEntrances, setCheckedEntrances] = useState([]);
+
   // --- SISTEMA INTERNO MODO ADMIN / DEV ---
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminClicks, setAdminClicks] = useState([]);
@@ -75,7 +78,6 @@ export default function Home() {
 
   // Função gerenciadora para trocar objetivos
   const changeObjective = (newObjective) => {
-    // CORREÇÃO: Se não houver novo objetivo ou se ele for idêntico ao atual, ignora completamente
     if (!newObjective || newObjective === objective) return;
     
     if (objective) {
@@ -103,7 +105,6 @@ export default function Home() {
     const hasPlayed = playedDialogues.includes(currentSceneId);
 
     if (!hasPlayed) {
-      // 1. Toca a cena pela primeira vez
       setPlayedDialogues((prev) => [...prev, currentSceneId]);
       
       if (activeScene?.entryDialogues) {
@@ -122,7 +123,6 @@ export default function Home() {
         changeObjective(activeScene.objective);
       }
     }
-    // CORREÇÃO: O bloco "else" antigo foi removido. Voltar para salas antigas não reabre o balão.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSceneId]);
 
@@ -155,19 +155,17 @@ export default function Home() {
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
 
-      // CORREÇÃO: Tecla TAB agora alterna (Abre se fechado / Fecha na hora se aberto)
       if (key === 'tab') {
         event.preventDefault(); 
         setIsObjectiveVisible(prev => {
           const nextState = !prev;
           if (nextState) {
-            setObjectiveTrigger(t => t + 1); // Só reseta o timer se estiver abrindo
+            setObjectiveTrigger(t => t + 1);
           }
           return nextState;
         });
       }
 
-      // Checagem do Konami Code para Modo Admin
       if (key === konamiCode[konamiIndex]) {
         const nextIndex = konamiIndex + 1;
         if (nextIndex === konamiCode.length) {
@@ -181,7 +179,6 @@ export default function Home() {
         setKonamiIndex(0);
       }
 
-      // Avançar fala na Barra de Espaço
       if (event.key === ' ' || event.code === 'Space') {
         if (currentSubtitle) {
           event.preventDefault(); 
@@ -200,10 +197,33 @@ export default function Home() {
     setCurrentSubtitle('');
     let localQueue = [];
 
+    // 🚪 CONFIGURAÇÃO DO QUEBRA-CABEÇA DAS PORTAS
+    // Mude os nomes abaixo para baterem EXATAMENTE com os IDs que você criou no seu `scenes.js`
+    const requiredEntrances = ['porta_principal', 'janela_sala', 'porta_churrasqueira'];
+    const allEntrancesChecked = requiredEntrances.every(id => checkedEntrances.includes(id));
+
+    // Se o jogador interagir com uma das entradas trancadas obrigatórias, salva no estado
+    if (requiredEntrances.includes(hotspot.id)) {
+      if (!checkedEntrances.includes(hotspot.id)) {
+        setCheckedEntrances(prev => [...prev, hotspot.id]);
+      }
+    }
+
+    // Interceptação da Janela da Cozinha
+    if (hotspot.id === 'janela_cozinha') {
+      if (!allEntrancesChecked) {
+        // Caso NÃO tenha verificado tudo ainda: bloqueia a entrada e solta a fala de recusa
+        localQueue.push("Está aberta, mas prefiro não entrar pela janela da cozinha, se não tiver outro jeito eu volto aqui.");
+        setSubtitleQueue(localQueue);
+        return; // 'return' corta o fluxo aqui e impede o hotspot.action original de rodar!
+      }
+    }
+
     const gameState = {
       inventory,
       documents,
       activeItem, 
+      allEntrancesChecked, // Enviado para dentro das actions se você precisar checar lá também
       
       changeScene: (nextId) => {
         setCurrentSceneId(nextId);

@@ -1,4 +1,9 @@
+// data/scenes.js
+
 export const SCENES = {
+  // ==========================================
+  // 1. CENA: ENTRADA
+  // ==========================================
   entrada: {
     image: '/cenarios/entradaPH.jpeg',
     entryDialogues: [
@@ -24,6 +29,10 @@ export const SCENES = {
       }
     ]
   },
+
+  // ==========================================
+  // 2. CENA: GARAGEM
+  // ==========================================
   garagem: {
     image: '/cenarios/garagemDir.png',
     objective: 'Explore a casa por coisas importantes.',
@@ -57,9 +66,12 @@ export const SCENES = {
       }
     ]
   },
+
+  // ==========================================
+  // 3. CENA: ESCADA
+  // ==========================================
   escada: {
     image: '/cenarios/escada.jpeg',
-    // Diálogos de entrada executados apenas na primeira vez que acessa a escada
     entryDialogues: [
       'Esse lugar me trás tantas lembranças... Quantas vezes eu quase caí nessa escada haha.'
     ],
@@ -80,6 +92,10 @@ export const SCENES = {
       }
     ]
   },
+
+  // ==========================================
+  // 4. CENA: CASA FORA
+  // ==========================================
   casaFora: {
     image: '/cenarios/casaFora.jpeg',
     entryDialogues: [
@@ -95,14 +111,14 @@ export const SCENES = {
         }
       },
       {
-        id: 'portaDupla',
+        id: 'portaDupla', // O motor vai capturar esse ID automaticamente
         points: [ { x: 72.6, y: 4.6 }, { x: 96.7, y: 10.8 }, { x: 97.5, y: 47.7 }, { x: 71.4, y: 56.2 } ],
         action: (state) => {
           state.speak('Está trancada!');
         }
       },
       {
-        id: 'janela',
+        id: 'janela', // O motor vai capturar esse ID automaticamente
         points: [ { x: 31.4, y: 33.7 }, { x: 41.6, y: 28.1 }, { x: 42.2, y: 46.4 }, { x: 31.1, y: 44.1 } ],
         action: (state) => {
           state.speak('Trancada e não acho legal entrar pela janela!');
@@ -117,6 +133,10 @@ export const SCENES = {
       }
     ]
   },
+
+  // ==========================================
+  // 5. CENA: CHURRASQUEIRA
+  // ==========================================
   churrasqueira: {
     image: '/cenarios/churrasqueira.jpeg',
     hotspots: [
@@ -128,7 +148,7 @@ export const SCENES = {
         }
       },
       {
-        id: 'portaCozinha',
+        id: 'portaCozinha', // O motor vai capturar esse ID automaticamente
         points: [ { x: 36.7, y: 11.6 }, { x: 44.3, y: 14.4 }, { x: 43.8, y: 63.3 }, { x: 37.1, y: 57.1 } ],
         action: (state) => {
           state.speak('Essa é a porta da cozinha. Deve estar aberta ainda, a gente nunca arrumou essa tranca.');
@@ -142,6 +162,40 @@ export const SCENES = {
         action: (state) => {
           state.speak('O sotão... Nunca gostei de subir lá... mas provavelmente tem coisas importantes...');
           state.speak('mais tarde eu subo, vou focar em entrar na casa primeiro.');
+        }
+      },
+      {
+        id: 'janelaCozinha',
+        top: '9%', left: '54%', width: '29%', height: '33%',
+        action: (state) => {
+          // Usando a verificação limpa vinda do motor do jogo
+          if (state.allEntrancesChecked) {
+            state.speak('Vou ter que entrar por aqui mesmo...');
+            state.setObjective('Explore o interior da casa.');
+            state.changeScene('cozinha');
+          } else {
+            state.speak('Está aberta, mas prefiro não entrar pela janela da cozinha, se não tiver outro jeito eu volto aqui.');
+          }
+        }
+      }
+    ]
+  },
+
+  // ==========================================
+  // 6. CENA: COZINHA INTERNA
+  // ==========================================
+  cozinha: {
+    image: '/cenarios/cozinhaInterna.jpeg',
+    entryDialogues: [
+      'Consegui passar pela janela...',
+      'Está escuro aqui dentro e com um cheiro forte de poeira.'
+    ],
+    hotspots: [
+      {
+        id: 'olharRedor',
+        top: '40%', left: '40%', width: '20%', height: '20%',
+        action: (state) => {
+          state.speak('Preciso encontrar pistas ou algo de valor por este cômodo.');
         }
       }
     ]
