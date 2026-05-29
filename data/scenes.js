@@ -181,9 +181,6 @@ export const SCENES = {
     ]
   },
 
-  // ==========================================
-  // 6. CENA: COZINHA INTERNA
-  // ==========================================
   cozinha: {
     image: '/cenarios/cozinha.jpeg',
     entryDialogues: [
@@ -191,6 +188,53 @@ export const SCENES = {
       'Está escuro aqui dentro e com um cheiro forte de poeira.'
     ],
     hotspots: [
+      {
+        id: 'corredorBanheiro',
+        points: [ { x: 31.8, y: 22.5 }, { x: 38.4, y: 27.7 }, { x: 38.3, y: 49.0 }, { x: 32.3, y: 59.0 } ],
+        action: (state) => {
+          state.changeScene('corredorBanheiro');
+        }
+      },
+    ]
+  },
+
+  corredorBanheiro: {
+    image: '/cenarios/corredorBanheiro.jpeg',
+    hotspots: [
+      {
+        id: 'irCozinha',
+        top: '90%', left: '0%', width: '100%', height: '10%',
+        action: (state) => {
+          state.changeScene('cozinha');
+        }
+      },
+      {
+        id: 'portaBanheiro',
+        points: [ { x: 20.8, y: 25.2 }, { x: 35.6, y: 32.5 }, { x: 36.0, y: 75.2 }, { x: 23.9, y: 90.9 } ],
+        action: (state) => {
+          if (!state.hasFlag('primeiro_clique_banheiro')){
+            state.speak('Eu lembro a demora que foi para colocarem uma tranca aqui.');
+            state.speak('Ainda me pergunto de quem foi a ideia de colocar uma porta camarão no banheiro.');
+            state.changeScene('banheiro');
+            state.setFlag('primeiro_clique_banheiro');
+          }else{
+            state.changeScene('banheiro');
+          }
+        }
+      }
+    ]
+  },
+  
+  banheiro: {
+    image: '/cenarios/banheiro.jpeg',
+    hotspots: [
+            {
+        id: 'irCorredorBanheiro',
+        top: '90%', left: '0%', width: '100%', height: '10%',
+        action: (state) => {
+          state.changeScene('corredorBanheiro');
+        }
+      }
     ]
   }
 };

@@ -68,6 +68,7 @@ export default function Home() {
 
   // --- NOVO: RASTREIO DE PORTAS E JANELAS VISITADAS ---
   const [checkedEntrances, setCheckedEntrances] = useState([]);
+  const [gameFlags, setGameFlags] = useState([]);
 
   // --- SISTEMA INTERNO MODO ADMIN / DEV ---
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -197,39 +198,41 @@ export default function Home() {
     setCurrentSubtitle('');
     let localQueue = [];
 
-    // 🚪 CONFIGURAÇÃO DO QUEBRA-CABEÇA DAS PORTAS
-    // Mude os nomes abaixo para baterem EXATAMENTE com os IDs que você criou no seu `scenes.js`
-    const requiredEntrances = ['portaCozinha', 'portaDupla', 'janela'];
-    const allEntrancesChecked = requiredEntrances.every(id => checkedEntrances.includes(id));
-
-    // Se o jogador interagir com uma das entradas trancadas obrigatórias, salva no estado
-    if (requiredEntrances.includes(hotspot.id)) {
-      if (!checkedEntrances.includes(hotspot.id)) {
-        setCheckedEntrances(prev => [...prev, hotspot.id]);
-      }
+    const requiredEntrances = ['portaDupla', 'janela', 'portaCozinha'];
+    if (requiredEntrances.includes(hotspot.id) && !checkedEntrances.includes(hotspot.id)) {
+      setCheckedEntrances(prev => [...prev, hotspot.id]);
     }
+
+    const allEntrancesChecked = requiredEntrances.every(id => 
+      id === hotspot.id ? true : checkedEntrances.includes(id)
+    );
 
     // Interceptação da Janela da Cozinha
     if (hotspot.id === 'janela_cozinha') {
       if (!allEntrancesChecked) {
-        // Caso NÃO tenha verificado tudo ainda: bloqueia a entrada e solta a fala de recusa
         localQueue.push("Está aberta, mas prefiro não entrar pela janela da cozinha, se não tiver outro jeito eu volto aqui.");
         setSubtitleQueue(localQueue);
-        return; // 'return' corta o fluxo aqui e impede o hotspot.action original de rodar!
+        return;
       }
     }
 
     const gameState = {
       inventory,
       documents,
-      activeItem, 
-      allEntrancesChecked, // Enviado para dentro das actions se você precisar checar lá também
+      activeItem,
+      allEntrancesChecked,
+
+      hasFlag: (flagName) => gameFlags.includes(flagName),
+      setFlag: (flagName) => {
+        if (!gameFlags.includes(flagName)) {
+          setGameFlags(prev => [...prev, flagName]);
+        }
+      },
       
       changeScene: (nextId) => {
         setCurrentSceneId(nextId);
         setCurrentSubtitle('');
         setSubtitleQueue([]);
-        localQueue = []; 
       },
       
       getItem: (itemName) => {
